@@ -41,24 +41,27 @@ def encode_image(image_path):
         return base64.b64encode(image_file.read()).decode('utf-8')
 
 def extract_invoice_data(image_path):
-    """Use OpenAI Vision API to extract invoice data - preserving original text"""
+    """Use OpenAI Vision API to extract invoice data in structured format"""
     base64_image = encode_image(image_path)
     
-    prompt = """Extract ALL text from this invoice exactly as it appears. Keep all original Chinese characters.
+    prompt = """Extract ALL items from this Chinese invoice/receipt.
 
-Return as a JSON with this structure:
+Return JSON in this EXACT format:
 {
-  "rows": [
-    ["col1", "col2", "col3", ...],
-    ["col1", "col2", "col3", ...],
-    ...
+  "date": "采购时间：2020.10.1",
+  "items": [
+    {"品名": "海带丝", "数量": "1", "单价": "5.00", "金额": "5.00"},
+    {"品名": "大头菜(颗)", "数量": "2.1", "单价": "1.70", "金额": "3.57"}
   ]
 }
 
-- Preserve the table structure exactly
-- Keep all Chinese text as-is
-- Each row should be an array of cell values
-- Return ONLY the JSON, no markdown"""
+IMPORTANT:
+- Extract EVERY single line item
+- Keep Chinese characters exactly as shown (品名 = product name)
+- 数量 = quantity (can be decimal like 2.1, 0.5)
+- 单价 = unit price
+- 金额 = total amount
+- Return valid JSON ONLY, no markdown, no explanation"""
 
     try:
         response = client.chat.completions.create(
@@ -93,43 +96,61 @@ Return as a JSON with this structure:
         return None
 
 def create_combined_excel(invoices_data, output_path):
-    """Create combined Excel file from all invoices"""
-    combined_rows = []
+    """Create combined Excel file from all invoices in clean table format"""
+    all_items = []
     
     for i, invoice in enumerate(invoices_data):
-        # Add header row with file name
-        combined_rows.append([f"=== 发票 {i+1}: {invoice['filename']} ==="])
-        combined_rows.append([])  # Empty row
+        data = invoice['data']
         
-        # Add invoice data rows
-        if 'rows' in invoice['data']:
-            for row in invoice['data']['rows']:
-                combined_rows.append(row)
+        # Add invoice header
+        date = data.get('date', invoice['filename'])
+        all_items.append({
+            '品名': f"=== 发票 {i+1} ===",
+            '数量': '',
+            '单价': '',
+            '金额': date
+        })
+        all_items.append({'品名': '', '数量': '', '单价': '', '金额': ''})
         
-        # Add separator
-        combined_rows.append([])
-        combined_rows.append(['=' * 50])
-        combined_rows.append([])
+        # Add all items from this invoice
+        if 'items' in data and data['items']:
+            for item in data['items']:
+                # Ensure all required fields exist
+                row = {
+                    '品名': item.get('品名', ''),
+                    '数量': item.get('数量', ''),
+                    '单价': item.get('单价', ''),
+                    '金额': item.get('金额', '')
+                }
+                all_items.append(row)
+            
+            # Add separator between invoices
+            all_items.append({'品名': '', '数量': '', '单价': '', '金额': ''})
+            all_items.append({'品名': '=' * 60, '数量': '', '单价': '', '金额': ''})
+            all_items.append({'品名': '', '数量': '', '单价': '', '金额': ''})
     
     # Create DataFrame
-    df = pd.DataFrame(combined_rows)
+    df = pd.DataFrame(all_items)
     
-    # Save to Excel
+    # Save to Excel with formatting
     with pd.ExcelWriter(output_path, engine='openpyxl') as writer:
-        df.to_excel(writer, sheet_name='所有发票', index=False, header=False)
+        df.to_excel(writer, sheet_name='所有发票', index=False)
         
-        # Auto-adjust column widths
+        # Format the worksheet
+        from openpyxl.styles import Font, Alignment
         workbook = writer.book
         worksheet = writer.sheets['所有发票']
         
-        for column in worksheet.columns:
-            max_length = 0
-            column_letter = column[0].column_letter
-            for cell in column:
-                if cell.value:
-                    max_length = max(max_length, len(str(cell.value)))
-            adjusted_width = min(max_length + 2, 50)
-            worksheet.column_dimensions[column_letter].width = adjusted_width
+        # Set column widths
+        worksheet.column_dimensions['A'].width = 25  # 品名
+        worksheet.column_dimensions['B'].width = 10  # 数量
+        worksheet.column_dimensions['C'].width = 10  # 单价
+        worksheet.column_dimensions['D'].width = 10  # 金额
+        
+        # Center align all cells
+        for row in worksheet.iter_rows():
+            for cell in row:
+                cell.alignment = Alignment(horizontal='center', vertical='center')
 
 @app.route('/')
 def index():
