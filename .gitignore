@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# Environment variables
+.env
+
+# Flask
+instance/
+.webassets-cache
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific - ignore uploaded files but keep structure
+inbox/*.jpg
+inbox/*.jpeg
+inbox/*.png
+inbox/*.pdf
+outbox/*.xlsx
+outbox/*.xls
+
+# Temporary files
+*.log
+*.tmp
+temp/
+
