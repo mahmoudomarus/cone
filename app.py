@@ -15,6 +15,8 @@ from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 import tempfile
 import shutil
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment
 
 # Load environment variables
 load_dotenv()
@@ -98,61 +100,57 @@ RULES:
         return None
 
 def create_combined_excel(invoices_data, output_path):
-    """Create combined Excel file from all invoices in clean table format"""
-    all_items = []
+    """Create combined Excel file - memory efficient version"""
+    # Create workbook directly without pandas to save memory
+    wb = Workbook()
+    ws = wb.active
+    ws.title = '所有发票'
     
+    # Add header row
+    ws.append(['品名', '数量', '单价', '金额'])
+    
+    # Style header
+    for cell in ws[1]:
+        cell.font = Font(bold=True)
+        cell.alignment = Alignment(horizontal='center')
+    
+    # Add data from all invoices
     for i, invoice in enumerate(invoices_data):
         data = invoice['data']
         
-        # Add invoice header
+        # Add invoice separator
         date = data.get('date', invoice['filename'])
-        all_items.append({
-            '品名': f"=== 发票 {i+1} ===",
-            '数量': '',
-            '单价': '',
-            '金额': date
-        })
-        all_items.append({'品名': '', '数量': '', '单价': '', '金额': ''})
+        ws.append([f"=== 发票 {i+1} ===", '', '', date])
+        ws.append(['', '', '', ''])
         
-        # Add all items from this invoice
+        # Add items
         if 'items' in data and data['items']:
             for item in data['items']:
-                # Ensure all required fields exist
-                row = {
-                    '品名': item.get('品名', ''),
-                    '数量': item.get('数量', ''),
-                    '单价': item.get('单价', ''),
-                    '金额': item.get('金额', '')
-                }
-                all_items.append(row)
-            
-            # Add separator between invoices
-            all_items.append({'品名': '', '数量': '', '单价': '', '金额': ''})
-            all_items.append({'品名': '=' * 60, '数量': '', '单价': '', '金额': ''})
-            all_items.append({'品名': '', '数量': '', '单价': '', '金额': ''})
+                ws.append([
+                    item.get('品名', ''),
+                    item.get('数量', ''),
+                    item.get('单价', ''),
+                    item.get('金额', '')
+                ])
+        
+        # Add separator
+        ws.append(['', '', '', ''])
+        ws.append(['=' * 60, '', '', ''])
+        ws.append(['', '', '', ''])
     
-    # Create DataFrame
-    df = pd.DataFrame(all_items)
+    # Set column widths
+    ws.column_dimensions['A'].width = 25
+    ws.column_dimensions['B'].width = 12
+    ws.column_dimensions['C'].width = 12
+    ws.column_dimensions['D'].width = 12
     
-    # Save to Excel with formatting
-    with pd.ExcelWriter(output_path, engine='openpyxl') as writer:
-        df.to_excel(writer, sheet_name='所有发票', index=False)
-        
-        # Format the worksheet
-        from openpyxl.styles import Font, Alignment
-        workbook = writer.book
-        worksheet = writer.sheets['所有发票']
-        
-        # Set column widths
-        worksheet.column_dimensions['A'].width = 25  # 品名
-        worksheet.column_dimensions['B'].width = 10  # 数量
-        worksheet.column_dimensions['C'].width = 10  # 单价
-        worksheet.column_dimensions['D'].width = 10  # 金额
-        
-        # Center align all cells
-        for row in worksheet.iter_rows():
-            for cell in row:
-                cell.alignment = Alignment(horizontal='center', vertical='center')
+    # Center align all cells
+    for row in ws.iter_rows(min_row=2):
+        for cell in row:
+            cell.alignment = Alignment(horizontal='center')
+    
+    # Save
+    wb.save(output_path)
 
 @app.route('/')
 def index():
@@ -192,6 +190,12 @@ def upload_files():
                         'data': data,
                         'timestamp': datetime.now().isoformat()
                     })
+                
+                # Delete uploaded file immediately to save memory
+                try:
+                    os.remove(filepath)
+                except:
+                    pass
         
         if not all_invoices:
             flash('无法处理任何发票 / Could not process any invoices', 'error')
@@ -203,21 +207,30 @@ def upload_files():
         create_combined_excel(all_invoices, output_path)
         
         # Send file to user
-        return send_file(
+        response = send_file(
             output_path,
             as_attachment=True,
             download_name=output_filename,
             mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
+        
+        # Clean up temp directory after sending
+        try:
+            shutil.rmtree(temp_dir)
+        except:
+            pass
+            
+        return response
     
     except Exception as e:
+        print(f"Error: {str(e)}")
         flash(f'处理出错 / Error: {str(e)}', 'error')
+        # Clean up on error
+        try:
+            shutil.rmtree(temp_dir)
+        except:
+            pass
         return redirect(url_for('index'))
-    
-    finally:
-        # Clean up temporary directory (after a delay to allow file download)
-        # Note: In production, use a background task for cleanup
-        pass
 
 @app.route('/health')
 def health():
