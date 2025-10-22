@@ -39,12 +39,7 @@ outbox/*.xls
 *.tmp
 temp/
 
-# Desktop app files - DO NOT PUSH
-desktop_app.py
-build_windows.py
-requirements-desktop.txt
-BUILD_INSTRUCTIONS.txt
-run_desktop.bat
+# Desktop app build artifacts - DO NOT PUSH
 *.spec
 build/
 dist/

@@ -1,0 +1,97 @@
+========================================
+BUILD WINDOWS .EXE WITHOUT WINDOWS
+Using GitHub Actions (Cloud Build)
+========================================
+
+STEP 1: Add API Key to GitHub Secrets
+--------------------------------------
+1. Go to: https://github.com/mahmoudomarus/cone/settings/secrets/actions
+
+2. Click "New repository secret"
+
+3. Name: OPENAI_API_KEY
+   Value: [paste your OpenAI API key here]
+
+4. Click "Add secret"
+
+
+STEP 2: Trigger the Build
+--------------------------
+
+METHOD A: Manual Build (Easiest)
+---------------------------------
+1. Go to: https://github.com/mahmoudomarus/cone/actions
+
+2. Click "Build Windows Exe" workflow
+
+3. Click "Run workflow" dropdown
+
+4. Click green "Run workflow" button
+
+5. Wait 3-5 minutes
+
+6. Download your .exe from the "Artifacts" section!
+
+
+METHOD B: Create a Release Tag
+-------------------------------
+1. In your terminal:
+   git tag v1.0.0
+   git push origin v1.0.0
+
+2. GitHub automatically builds and creates a release
+
+3. Download .exe from: https://github.com/mahmoudomarus/cone/releases
+
+
+STEP 3: Download Your .exe
+---------------------------
+After build completes:
+
+1. Go to the workflow run
+
+2. Scroll to bottom "Artifacts" section
+
+3. Download "InvoiceScanner-Windows"
+
+4. Extract the .zip
+
+5. Inside: InvoiceScanner.exe (~100-150MB)
+
+6. Copy to any Windows computer and run!
+
+
+WHAT HAPPENS:
+-------------
+✓ GitHub provides free Windows VM
+✓ Installs Python and dependencies
+✓ Builds your .exe automatically
+✓ Uploads the .exe for download
+✓ 100% free!
+
+
+NO WINDOWS COMPUTER NEEDED!
+----------------------------
+Everything happens in the cloud on GitHub's servers.
+
+
+TROUBLESHOOTING:
+----------------
+If build fails:
+1. Check the API key secret is set correctly
+2. Check workflow logs for errors
+3. Make sure all desktop files are pushed to GitHub
+
+
+SHARING THE .EXE:
+-----------------
+Once downloaded:
+1. The .exe is standalone
+2. Works on any Windows 10/11 computer
+3. No Python needed
+4. API key is embedded (from your secret)
+5. Just double-click to run!
+
+
+========================================
+

@@ -1,0 +1,89 @@
+========================================
+BUILD WINDOWS .EXE INSTRUCTIONS
+========================================
+
+STEP 1: Setup on Windows Computer
+----------------------------------
+1. Install Python 3.11+ on Windows:
+   https://www.python.org/downloads/
+
+2. Open Command Prompt (cmd.exe)
+
+3. Navigate to this folder:
+   cd path\to\perper
+
+4. Install requirements:
+   pip install -r requirements-desktop.txt
+
+
+STEP 2: Build the .exe
+-----------------------
+1. Make sure .env file exists with your OPENAI_API_KEY
+
+2. Run the build script:
+   python build_windows.py
+
+3. Wait 2-3 minutes for build to complete
+
+4. Find your .exe in the "dist" folder:
+   dist\InvoiceScanner.exe
+
+
+STEP 3: Distribute
+------------------
+1. Copy InvoiceScanner.exe to any Windows computer
+
+2. Double-click to run!
+
+3. The app will open in a native window
+
+4. Use it exactly like the web version:
+   - Upload multiple invoice images
+   - Get combined Excel file
+
+
+ALTERNATIVE: Simple Run (No Build)
+-----------------------------------
+If you don't want to build an .exe, you can run directly:
+
+1. Install requirements:
+   pip install -r requirements-desktop.txt
+
+2. Run:
+   python desktop_app.py
+
+3. App opens in native window!
+
+
+NOTES:
+------
+- The .exe includes everything (Python, libraries, etc.)
+- File size will be ~100-150MB
+- No internet connection needed (except for OpenAI API calls)
+- API key is embedded in the .exe from .env file
+- Users don't need Python installed to run the .exe
+
+
+TROUBLESHOOTING:
+----------------
+If build fails:
+1. Make sure all files are present (templates folder, .env, etc.)
+2. Try: pip install --upgrade pyinstaller
+3. Run as administrator
+
+If .exe doesn't open:
+1. Check Windows Defender didn't block it
+2. Right-click → Properties → Unblock
+3. Check .env file has valid OPENAI_API_KEY
+
+
+ICON (Optional):
+----------------
+To add a custom icon:
+1. Get a .ico file
+2. Edit build_windows.py
+3. Change '--icon=NONE' to '--icon=myicon.ico'
+
+
+========================================
+
