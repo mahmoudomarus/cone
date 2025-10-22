@@ -44,24 +44,26 @@ def extract_invoice_data(image_path):
     """Use OpenAI Vision API to extract invoice data in structured format"""
     base64_image = encode_image(image_path)
     
-    prompt = """Extract ALL items from this Chinese invoice/receipt.
+    prompt = """Extract ALL line items from this invoice/receipt and flatten them into a simple list.
 
 Return JSON in this EXACT format:
 {
   "date": "采购时间：2020.10.1",
   "items": [
     {"品名": "海带丝", "数量": "1", "单价": "5.00", "金额": "5.00"},
-    {"品名": "大头菜(颗)", "数量": "2.1", "单价": "1.70", "金额": "3.57"}
+    {"品名": "大头菜(颗)", "数量": "2.1", "单价": "1.70", "金额": "3.57"},
+    {"品名": "土豆", "数量": "2.2", "单价": "1.28", "金额": "2.82"}
   ]
 }
 
-IMPORTANT:
-- Extract EVERY single line item
-- Keep Chinese characters exactly as shown (品名 = product name)
-- 数量 = quantity (can be decimal like 2.1, 0.5)
+RULES:
+- Extract EVERY product/item from the invoice
+- If invoice has multiple columns, extract ALL items from ALL columns into one flat list
+- Keep exact Chinese text for product names (品名)
+- 数量 = quantity 
 - 单价 = unit price
 - 金额 = total amount
-- Return valid JSON ONLY, no markdown, no explanation"""
+- Return ONLY valid JSON, no markdown"""
 
     try:
         response = client.chat.completions.create(
