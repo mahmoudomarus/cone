@@ -10,20 +10,22 @@ import base64
 import json
 from datetime import datetime
 from openai import OpenAI
-import pandas as pd
 from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 import tempfile
 import shutil
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment
+from PIL import Image
+import io
 
 # Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key-change-this')
-app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max upload
+app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024  # 20MB max upload (reduced)
+app.config['MAX_FILES'] = 10  # Limit to 10 files at once
 
 # Get OpenAI API key
 API_KEY = os.getenv("OPENAI_API_KEY")
@@ -37,10 +39,33 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf'}
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def compress_image(image_path, max_size=(1920, 1920), quality=85):
+    """Compress image to reduce memory usage"""
+    try:
+        img = Image.open(image_path)
+        
+        # Convert to RGB if needed
+        if img.mode in ('RGBA', 'P'):
+            img = img.convert('RGB')
+        
+        # Resize if too large
+        img.thumbnail(max_size, Image.Resampling.LANCZOS)
+        
+        # Save compressed version
+        output = io.BytesIO()
+        img.save(output, format='JPEG', quality=quality, optimize=True)
+        output.seek(0)
+        
+        return output.getvalue()
+    except Exception as e:
+        print(f"Compression error: {e}, using original")
+        with open(image_path, 'rb') as f:
+            return f.read()
+
 def encode_image(image_path):
-    """Encode image to base64"""
-    with open(image_path, "rb") as image_file:
-        return base64.b64encode(image_file.read()).decode('utf-8')
+    """Encode image to base64 with compression"""
+    compressed_data = compress_image(image_path)
+    return base64.b64encode(compressed_data).decode('utf-8')
 
 def extract_invoice_data(image_path):
     """Use OpenAI Vision API to extract invoice data in structured format"""
@@ -168,20 +193,29 @@ def upload_files():
         flash('没有选择文件 / No files selected', 'error')
         return redirect(url_for('index'))
     
+    # Limit number of files
+    max_files = app.config.get('MAX_FILES', 10)
+    if len(files) > max_files:
+        flash(f'最多上传{max_files}个文件 / Maximum {max_files} files allowed', 'error')
+        return redirect(url_for('index'))
+    
     # Create temporary directory for processing
     temp_dir = tempfile.mkdtemp()
     all_invoices = []
     
     try:
-        # Save and process each file
-        for file in files:
+        # Process files ONE BY ONE to save memory
+        for idx, file in enumerate(files, 1):
             if file and allowed_file(file.filename):
                 filename = secure_filename(file.filename)
                 filepath = os.path.join(temp_dir, filename)
+                
+                print(f"Processing {idx}/{len(files)}: {filename}")
+                
+                # Save file
                 file.save(filepath)
                 
                 # Extract data from invoice
-                print(f"Processing: {filename}")
                 data = extract_invoice_data(filepath)
                 
                 if data:
@@ -191,11 +225,15 @@ def upload_files():
                         'timestamp': datetime.now().isoformat()
                     })
                 
-                # Delete uploaded file immediately to save memory
+                # Delete uploaded file IMMEDIATELY to free memory
                 try:
                     os.remove(filepath)
                 except:
                     pass
+                
+                # Force garbage collection after each file
+                import gc
+                gc.collect()
         
         if not all_invoices:
             flash('无法处理任何发票 / Could not process any invoices', 'error')
