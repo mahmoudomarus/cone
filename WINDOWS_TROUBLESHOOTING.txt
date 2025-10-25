@@ -1,0 +1,119 @@
+========================================
+WINDOWS APP TROUBLESHOOTING
+========================================
+
+PROBLEM 1: "Windows protected your PC" Warning
+------------------------------------------------
+This is NORMAL for unsigned .exe files.
+
+FIX:
+1. Click "More info"
+2. Click "Run anyway"
+3. Done!
+
+WHY: Windows SmartScreen blocks unsigned executables by default.
+
+PERMANENT FIX: 
+- Buy a code signing certificate (~$200/year)
+- Or: Users just need to click "Run anyway" once
+
+
+PROBLEM 2: App Won't Launch / Closes Immediately
+-------------------------------------------------
+CAUSE: Missing .env file with API key
+
+FIX:
+1. Create a file named ".env" (no extension) 
+2. Put it in the SAME folder as InvoiceScanner.exe
+3. Inside .env, write:
+   GOOGLE_API_KEY=your-api-key-here
+
+4. Run InvoiceScanner.exe again
+
+
+PROBLEM 3: "Python error" or Crashes
+-------------------------------------
+CAUSE: Missing Visual C++ Redistributable
+
+FIX:
+1. Download: https://aka.ms/vs/17/release/vc_redist.x64.exe
+2. Install it
+3. Restart computer
+4. Run InvoiceScanner.exe again
+
+
+PROBLEM 4: Excel File Not Downloading
+--------------------------------------
+CAUSE: Browser download settings
+
+FIX:
+The file downloads automatically to your Downloads folder.
+Check: C:\Users\YourName\Downloads\所有发票_*.xlsx
+
+
+PROBLEM 5: Antivirus Blocking
+------------------------------
+CAUSE: Some antivirus flag PyInstaller .exe files
+
+FIX:
+1. Add InvoiceScanner.exe to antivirus exceptions
+2. Or temporarily disable antivirus to test
+3. Confirm it's safe (you built it!)
+
+
+PROBLEM 6: "VCRUNTIME140.dll is missing"
+-----------------------------------------
+CAUSE: Missing Visual C++ Redistributable
+
+FIX: Same as Problem 3 above
+
+
+PROBLEM 7: Blank Window Opens
+------------------------------
+CAUSE: Flask server not starting
+
+FIX:
+1. Check .env file exists with GOOGLE_API_KEY
+2. Check Windows Firewall isn't blocking port 5555
+3. Run as Administrator (right-click → Run as administrator)
+
+
+HOW TO CREATE .ENV FILE ON WINDOWS:
+------------------------------------
+1. Open Notepad
+2. Type: GOOGLE_API_KEY=AIzaSyBcF1OremOEFcR9e7bZ8wXBKUv8Ps8xl9w
+3. Save As: .env (type the dot!)
+4. Change "Save as type" to "All Files"
+5. Put it next to InvoiceScanner.exe
+
+
+DISTRIBUTION TIP:
+-----------------
+When sharing the .exe with others:
+
+OPTION 1: Include .env file
+- Zip both InvoiceScanner.exe and .env together
+- Recipients extract both files to same folder
+- They run InvoiceScanner.exe
+
+OPTION 2: Embed key in .exe
+- Edit desktop_app.py before building
+- Hardcode: GOOGLE_API_KEY = "your-key-here"
+- Rebuild .exe
+- No .env file needed!
+
+
+TESTING THE BUILD:
+------------------
+1. Extract InvoiceScanner.exe
+2. Create .env file next to it
+3. Double-click InvoiceScanner.exe
+4. If blocked: Click "More info" → "Run anyway"
+5. Window should open in 3-5 seconds
+6. Upload an invoice
+7. Wait ~10 seconds for processing
+8. Excel file downloads automatically!
+
+
+========================================
+
