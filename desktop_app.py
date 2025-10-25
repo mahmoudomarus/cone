@@ -9,18 +9,17 @@ import threading
 import sys
 import os
 
-# Load environment variables BEFORE importing app
-from dotenv import load_dotenv
-load_dotenv()
+# Set API key directly (embedded in .exe)
+os.environ['GOOGLE_API_KEY'] = 'AIzaSyBcF1OremOEFcR9e7bZ8wXBKUv8Ps8xl9w'
 
-# Verify API key is loaded
-api_key = os.getenv("GOOGLE_API_KEY")
-if not api_key:
-    print("ERROR: GOOGLE_API_KEY not found in .env file!")
-    sys.exit(1)
-else:
-    print(f"✓ Google API key loaded: {api_key[:20]}...")
+# Try to load .env if it exists (optional override)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except:
+    pass
 
+# Import app after setting environment
 from app import app
 
 # Set Flask to not reload

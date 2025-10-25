@@ -19,10 +19,7 @@ jobs:
       with:
         python-version: '3.11'
     
-    - name: Create .env file
-      run: |
-        echo "GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}" > .env
-      shell: bash
+    # No need to create .env file - API key is embedded in desktop_app.py
     
     - name: Install dependencies
       run: |

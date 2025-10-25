@@ -20,7 +20,7 @@ PyInstaller.__main__.run([
     '--windowed',
     '--icon=NONE',
     f'--add-data=templates{separator}templates',
-    f'--add-data=.env{separator}.',
+    # No .env file needed - API key is embedded in desktop_app.py
     '--hidden-import=PIL._tkinter_finder',
     '--hidden-import=openpyxl',
     '--hidden-import=google.generativeai',

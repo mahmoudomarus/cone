@@ -35,19 +35,7 @@ h) Select: C:\InvoiceScanner\
 i) Done!
 
 
-4. CREATE .ENV FILE
--------------------
-In the same folder as InvoiceScanner.exe:
-
-a) Right-click → New → Text Document
-b) Open it
-c) Type: GOOGLE_API_KEY=AIzaSyBcF1OremOEFcR9e7bZ8wXBKUv8Ps8xl9w
-d) Save As → .env
-e) Change "Save as type" to "All Files"
-f) Save
-
-
-5. RUN THE APP
+4. RUN THE APP
 --------------
 a) Double-click InvoiceScanner.exe
 b) If Windows SmartScreen appears:
@@ -56,7 +44,7 @@ b) If Windows SmartScreen appears:
 c) Window opens in 5-10 seconds
 
 
-6. USE THE APP
+5. USE THE APP
 --------------
 a) Upload invoice images (JPG, PNG)
 b) Click "开始处理 / Start Processing"
@@ -75,7 +63,7 @@ TROUBLESHOOTING
 → Add folder to Defender exclusions (Step 3)
 
 ❌ App doesn't start / blank screen
-→ Check .env file exists with API key
+→ Wait 5-10 seconds for app to fully load
 
 ❌ "VCRUNTIME140.dll is missing"
 → Install: https://aka.ms/vs/17/release/vc_redist.x64.exe
