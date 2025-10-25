@@ -397,9 +397,10 @@
         }
 
         // Form submission
-        uploadForm.addEventListener('submit', (e) => {
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault(); // Prevent default form submission
+            
             if (selectedFiles.length === 0) {
-                e.preventDefault();
                 alert('请先选择文件 / Please select files first');
                 return;
             }
@@ -423,8 +424,77 @@
                     `正在处理发票${dotString} Processing invoices${dotString}`;
             }, 500);
             
-            // Store interval ID to clear it later if needed
-            window.loadingInterval = loadingInterval;
+            try {
+                // Prepare form data
+                const formData = new FormData();
+                selectedFiles.forEach(file => formData.append('files[]', file));
+                
+                // Send request
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                clearInterval(loadingInterval);
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    
+                    if (result.success && result.download_url) {
+                        // Check if running in pywebview (desktop app)
+                        if (window.pywebview) {
+                            // Use native save dialog
+                            try {
+                                const saveResult = await window.pywebview.api.save_file_dialog(result.download_url);
+                                if (saveResult.success) {
+                                    document.getElementById('loadingText').textContent = `✅ 文件已保存到 / File saved to: ${saveResult.path}`;
+                                    setTimeout(() => {
+                                        location.reload();
+                                    }, 3000);
+                                } else if (saveResult.error === 'Cancelled') {
+                                    document.getElementById('loadingText').textContent = '❌ 保存已取消 / Save cancelled';
+                                    setTimeout(() => {
+                                        location.reload();
+                                    }, 2000);
+                                } else {
+                                    throw new Error(saveResult.error);
+                                }
+                            } catch (err) {
+                                console.error('Save dialog error:', err);
+                                alert(`保存失败 / Save failed: ${err.message}`);
+                                location.reload();
+                            }
+                        } else {
+                            // Running in browser - regular download
+                            const downloadResponse = await fetch(result.download_url);
+                            const blob = await downloadResponse.blob();
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = result.filename;
+                            document.body.appendChild(a);
+                            a.click();
+                            window.URL.revokeObjectURL(url);
+                            document.body.removeChild(a);
+                            
+                            document.getElementById('loadingText').textContent = '✅ 处理完成！文件已下载 / Processing complete! File downloaded';
+                            setTimeout(() => {
+                                location.reload();
+                            }, 2000);
+                        }
+                    } else {
+                        throw new Error(result.error || 'Unknown error');
+                    }
+                } else {
+                    const result = await response.json();
+                    throw new Error(result.error || 'Upload failed');
+                }
+            } catch (error) {
+                clearInterval(loadingInterval);
+                console.error('Error:', error);
+                alert('处理失败，请重试 / Processing failed, please try again');
+                location.reload();
+            }
         });
     </script>
 </body>

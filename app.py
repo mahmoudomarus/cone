@@ -27,6 +27,11 @@ app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key-change-this')
 app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024  # 20MB max upload (reduced)
 app.config['MAX_FILES'] = 10  # Limit to 10 files at once
 
+# Store for temporary download files - use persistent directory
+DOWNLOAD_DIR = os.path.join(os.path.dirname(__file__), 'downloads')
+os.makedirs(DOWNLOAD_DIR, exist_ok=True)
+latest_file = None  # Store latest generated file path
+
 # Get Google API key
 API_KEY = os.getenv("GOOGLE_API_KEY")
 if not API_KEY:
@@ -34,7 +39,7 @@ if not API_KEY:
 
 # Configure Gemini
 genai.configure(api_key=API_KEY)
-model = genai.GenerativeModel('gemini-1.5-pro-latest')
+model = genai.GenerativeModel('gemini-2.5-flash')
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf'}
 
@@ -243,39 +248,61 @@ def upload_files():
         print(f"Total processing time: {total_time:.1f}s for {len(files)} file(s)")
         
         if not all_invoices:
-            flash('无法处理任何发票 / Could not process any invoices', 'error')
-            return redirect(url_for('index'))
+            return {'success': False, 'error': '无法处理任何发票 / Could not process any invoices'}, 400
         
         # Create Excel file
         output_filename = f"所有发票_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
-        output_path = os.path.join(temp_dir, output_filename)
+        output_path = os.path.join(DOWNLOAD_DIR, output_filename)
         create_combined_excel(all_invoices, output_path)
         
-        # Send file to user
-        response = send_file(
-            output_path,
-            as_attachment=True,
-            download_name=output_filename,
-            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        )
+        # Store as latest file
+        global latest_file
+        latest_file = output_path
         
-        # Clean up temp directory after sending
+        # Clean up temp upload directory
         try:
             shutil.rmtree(temp_dir)
         except:
             pass
-            
-        return response
+        
+        # Return success with download URL
+        return {
+            'success': True,
+            'download_url': f'/download/{output_filename}',
+            'filename': output_filename
+        }
     
     except Exception as e:
         print(f"Error: {str(e)}")
-        flash(f'处理出错 / Error: {str(e)}', 'error')
         # Clean up on error
         try:
             shutil.rmtree(temp_dir)
         except:
             pass
-        return redirect(url_for('index'))
+        return {'success': False, 'error': f'处理出错 / Error: {str(e)}'}, 500
+
+@app.route('/download/<path:filename>')
+def download_file(filename):
+    """Download endpoint for generated Excel files"""
+    # Don't use secure_filename as it strips Chinese characters
+    # Instead, just use the filename directly since we control the creation
+    file_path = os.path.join(DOWNLOAD_DIR, filename)
+    
+    # Security: ensure the file is actually in the downloads directory
+    real_path = os.path.realpath(file_path)
+    real_download_dir = os.path.realpath(DOWNLOAD_DIR)
+    
+    if not real_path.startswith(real_download_dir):
+        return {'error': 'Invalid file path'}, 403
+    
+    if os.path.exists(file_path):
+        return send_file(
+            file_path,
+            as_attachment=True,
+            download_name=filename,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+    return {'error': f'File not found: {filename}'}, 404
 
 @app.route('/health')
 def health():

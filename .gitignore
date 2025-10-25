@@ -33,6 +33,8 @@ inbox/*.png
 inbox/*.pdf
 outbox/*.xlsx
 outbox/*.xls
+downloads/*.xlsx
+downloads/*.xls
 
 # Temporary files
 *.log
