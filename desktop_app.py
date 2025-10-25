@@ -40,33 +40,63 @@ class API:
             url: URL to download the file from (e.g., '/download/filename.xlsx')
         """
         try:
+            print(f"[Desktop API] Save dialog called with URL: {url}")
+            
             # Get default filename
             default_name = f"所有发票_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+            print(f"[Desktop API] Default filename: {default_name}")
             
-            # Show save dialog
-            result = window.create_file_dialog(
-                webview.SAVE_DIALOG,
-                directory=os.path.expanduser('~/Downloads'),
-                save_filename=default_name,
-                file_types=('Excel Files (*.xlsx)', 'All Files (*.*)')
-            )
+            # Show save dialog (use tuple for file_types on all platforms)
+            try:
+                # Try new API first (webview 4.0+)
+                from webview import FileDialog
+                print("[Desktop API] Using FileDialog.SAVE (new API)")
+                result = window.create_file_dialog(
+                    FileDialog.SAVE,
+                    directory=os.path.expanduser('~/Downloads'),
+                    save_filename=default_name,
+                    file_types=('Excel Files (*.xlsx)',)
+                )
+            except (ImportError, AttributeError) as e:
+                # Fallback to old API
+                print(f"[Desktop API] Using SAVE_DIALOG (old API): {e}")
+                result = window.create_file_dialog(
+                    webview.SAVE_DIALOG,
+                    directory=os.path.expanduser('~/Downloads'),
+                    save_filename=default_name,
+                    file_types=('Excel Files (*.xlsx)', 'All Files (*.*)')
+                )
+            
+            print(f"[Desktop API] Dialog result: {result}")
             
             if result:
                 save_path = result[0] if isinstance(result, tuple) else result
+                print(f"[Desktop API] Saving to: {save_path}")
                 
                 # Download file from Flask
-                response = requests.get(f'http://127.0.0.1:5555{url}')
+                full_url = f'http://127.0.0.1:5555{url}'
+                print(f"[Desktop API] Downloading from: {full_url}")
+                response = requests.get(full_url)
+                
+                print(f"[Desktop API] Response status: {response.status_code}")
                 
                 if response.status_code == 200:
                     with open(save_path, 'wb') as f:
                         f.write(response.content)
+                    print(f"[Desktop API] ✓ File saved successfully: {save_path}")
                     return {'success': True, 'path': save_path}
                 else:
-                    return {'success': False, 'error': 'Download failed'}
+                    error_msg = f'Download failed with status {response.status_code}'
+                    print(f"[Desktop API] ✗ {error_msg}")
+                    return {'success': False, 'error': error_msg}
             else:
+                print("[Desktop API] User cancelled save dialog")
                 return {'success': False, 'error': 'Cancelled'}
                 
         except Exception as e:
+            print(f"[Desktop API] ERROR: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return {'success': False, 'error': str(e)}
 
 def start_flask():
