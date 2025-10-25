@@ -27,7 +27,10 @@ app.config['DEBUG'] = False
 
 def start_flask():
     """Start Flask server in a separate thread"""
-    app.run(host='127.0.0.1', port=5555, debug=False, use_reloader=False)
+    import logging
+    log = logging.getLogger('werkzeug')
+    log.setLevel(logging.INFO)
+    app.run(host='127.0.0.1', port=5555, debug=True, use_reloader=False)
 
 def main():
     """Main entry point for desktop app"""
