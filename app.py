@@ -9,7 +9,6 @@ import os
 import base64
 import json
 from datetime import datetime
-from openai import OpenAI
 from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 import tempfile
@@ -18,6 +17,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment
 from PIL import Image
 import io
+import google.generativeai as genai
 
 # Load environment variables
 load_dotenv()
@@ -27,12 +27,14 @@ app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key-change-this')
 app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024  # 20MB max upload (reduced)
 app.config['MAX_FILES'] = 10  # Limit to 10 files at once
 
-# Get OpenAI API key
-API_KEY = os.getenv("OPENAI_API_KEY")
+# Get Google API key
+API_KEY = os.getenv("GOOGLE_API_KEY")
 if not API_KEY:
-    raise Exception("Please set OPENAI_API_KEY in .env file")
+    raise Exception("Please set GOOGLE_API_KEY in .env file")
 
-client = OpenAI(api_key=API_KEY)
+# Configure Gemini
+genai.configure(api_key=API_KEY)
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf'}
 
@@ -68,8 +70,7 @@ def encode_image(image_path):
     return base64.b64encode(compressed_data).decode('utf-8')
 
 def extract_invoice_data(image_path):
-    """Use OpenAI Vision API to extract invoice data in structured format"""
-    base64_image = encode_image(image_path)
+    """Use Google Gemini Vision API to extract invoice data in structured format"""
     
     prompt = """Extract ALL line items from this invoice/receipt and flatten them into a simple list.
 
@@ -90,38 +91,33 @@ RULES:
 - 数量 = quantity 
 - 单价 = unit price
 - 金额 = total amount
-- Return ONLY valid JSON, no markdown"""
+- Return ONLY valid JSON, no markdown, no explanation, no code blocks"""
 
     try:
-        response = client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": prompt},
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/jpeg;base64,{base64_image}"
-                            }
-                        }
-                    ]
-                }
-            ],
-            max_tokens=2000
-        )
+        # Open and send image to Gemini
+        img = Image.open(image_path)
         
-        content = response.choices[0].message.content.strip()
+        response = model.generate_content([prompt, img])
+        content = response.text.strip()
+        
+        # Clean up response
+        if content.startswith("```json"):
+            content = content[7:]
         if content.startswith("```"):
-            content = content.split("```")[1]
-            if content.startswith("json"):
-                content = content[4:]
+            content = content[3:]
+        if content.endswith("```"):
+            content = content[:-3]
+        
+        content = content.strip()
+        
+        print(f"Gemini response: {content[:200]}...")
         
         return json.loads(content)
     
     except Exception as e:
-        print(f"OpenAI API error: {e}")
+        print(f"Gemini API error: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 def create_combined_excel(invoices_data, output_path):

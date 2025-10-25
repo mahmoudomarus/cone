@@ -9,8 +9,8 @@ STEP 1: Add API Key to GitHub Secrets
 
 2. Click "New repository secret"
 
-3. Name: OPENAI_API_KEY
-   Value: [paste your OpenAI API key here]
+3. Name: GOOGLE_API_KEY
+   Value: [paste your Google/Gemini API key here]
 
 4. Click "Add secret"
 

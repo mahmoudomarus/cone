@@ -8,6 +8,19 @@ import webview
 import threading
 import sys
 import os
+
+# Load environment variables BEFORE importing app
+from dotenv import load_dotenv
+load_dotenv()
+
+# Verify API key is loaded
+api_key = os.getenv("GOOGLE_API_KEY")
+if not api_key:
+    print("ERROR: GOOGLE_API_KEY not found in .env file!")
+    sys.exit(1)
+else:
+    print(f"✓ Google API key loaded: {api_key[:20]}...")
+
 from app import app
 
 # Set Flask to not reload
