@@ -294,7 +294,9 @@
 
             <div class="loading" id="loading">
                 <div class="spinner"></div>
-                <div class="loading-text">正在处理发票，请稍候... Processing invoices...</div>
+                <div class="loading-text" id="loadingText">正在处理发票，请稍候... Processing invoices...</div>
+                <div class="loading-text" style="margin-top: 10px; font-size: 0.9em; color: #764ba2;" id="progressText"></div>
+                <div class="loading-text" style="margin-top: 5px; font-size: 0.85em; color: #999;">⏱️ 预计 10-20 秒/张 | ~10-20 sec per invoice</div>
             </div>
         </form>
 
@@ -405,6 +407,24 @@
             submitBtn.disabled = true;
             loading.classList.add('active');
             uploadArea.style.display = 'none';
+            
+            // Show progress
+            const fileCount = selectedFiles.length;
+            const progressText = document.getElementById('progressText');
+            const estimatedTime = fileCount * 15; // 15 seconds per file average
+            progressText.textContent = `处理 ${fileCount} 个文件 | Processing ${fileCount} file(s) - 预计 ${estimatedTime} 秒 | Est. ${estimatedTime}s`;
+            
+            // Update loading text with animation
+            let dots = 0;
+            const loadingInterval = setInterval(() => {
+                dots = (dots + 1) % 4;
+                const dotString = '.'.repeat(dots);
+                document.getElementById('loadingText').textContent = 
+                    `正在处理发票${dotString} Processing invoices${dotString}`;
+            }, 500);
+            
+            // Store interval ID to clear it later if needed
+            window.loadingInterval = loadingInterval;
         });
     </script>
 </body>

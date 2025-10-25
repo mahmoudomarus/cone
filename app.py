@@ -200,13 +200,17 @@ def upload_files():
     all_invoices = []
     
     try:
+        import time
+        start_time = time.time()
+        
         # Process files ONE BY ONE to save memory
         for idx, file in enumerate(files, 1):
             if file and allowed_file(file.filename):
                 filename = secure_filename(file.filename)
                 filepath = os.path.join(temp_dir, filename)
                 
-                print(f"Processing {idx}/{len(files)}: {filename}")
+                file_start = time.time()
+                print(f"[{idx}/{len(files)}] Processing: {filename}")
                 
                 # Save file
                 file.save(filepath)
@@ -220,6 +224,10 @@ def upload_files():
                         'data': data,
                         'timestamp': datetime.now().isoformat()
                     })
+                    file_time = time.time() - file_start
+                    print(f"[{idx}/{len(files)}] ✓ Completed in {file_time:.1f}s")
+                else:
+                    print(f"[{idx}/{len(files)}] ✗ Failed to extract data")
                 
                 # Delete uploaded file IMMEDIATELY to free memory
                 try:
@@ -230,6 +238,9 @@ def upload_files():
                 # Force garbage collection after each file
                 import gc
                 gc.collect()
+        
+        total_time = time.time() - start_time
+        print(f"Total processing time: {total_time:.1f}s for {len(files)} file(s)")
         
         if not all_invoices:
             flash('无法处理任何发票 / Could not process any invoices', 'error')
