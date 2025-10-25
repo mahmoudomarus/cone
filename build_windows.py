@@ -33,5 +33,8 @@ PyInstaller.__main__.run([
     '--collect-all=google.generativeai',
     '--noconsole',
     '--clean',
+    '--exclude-module=_testcapi',  # Remove test modules that trigger AV
+    '--exclude-module=unittest',
+    '--exclude-module=test',
 ])
 

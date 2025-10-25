@@ -1,0 +1,168 @@
+========================================
+FIX WINDOWS DEFENDER BLOCKING
+========================================
+
+PROBLEM: Windows Defender deletes InvoiceScanner.exe or blocks it completely
+
+This happens because PyInstaller .exe files trigger false positives.
+
+========================================
+SOLUTION 1: Add Exclusion (RECOMMENDED)
+========================================
+
+STEP 1: Extract the .exe first
+-------------------------------
+1. Download InvoiceScanner-Windows.zip
+2. Extract to a folder (e.g., C:\InvoiceScanner\)
+3. DO NOT run it yet
+
+
+STEP 2: Add folder to Windows Defender exclusions
+--------------------------------------------------
+1. Press Windows key
+2. Type: "Windows Security"
+3. Open "Windows Security"
+4. Click "Virus & threat protection"
+5. Scroll down to "Virus & threat protection settings"
+6. Click "Manage settings"
+7. Scroll down to "Exclusions"
+8. Click "Add or remove exclusions"
+9. Click "Add an exclusion"
+10. Choose "Folder"
+11. Select: C:\InvoiceScanner\
+12. Click "Select Folder"
+
+
+STEP 3: Now run InvoiceScanner.exe
+-----------------------------------
+1. Go to C:\InvoiceScanner\
+2. Double-click InvoiceScanner.exe
+3. If SmartScreen appears:
+   - Click "More info"
+   - Click "Run anyway"
+4. Done!
+
+
+========================================
+SOLUTION 2: Temporarily Disable Defender
+========================================
+
+NOT RECOMMENDED but works for testing:
+
+1. Windows Security → Virus & threat protection
+2. Manage settings
+3. Turn OFF "Real-time protection"
+4. Run InvoiceScanner.exe
+5. Turn protection back ON after
+
+
+========================================
+SOLUTION 3: Alternative Download Location
+========================================
+
+Sometimes Defender is more aggressive with Downloads folder.
+
+TRY:
+1. Extract to Desktop instead of Downloads
+2. Or extract to C:\Tools\
+3. Then follow Solution 1
+
+
+========================================
+WHY IS THIS HAPPENING?
+========================================
+
+PyInstaller .exe files are commonly flagged as malware because:
+1. They bundle Python runtime (looks suspicious to AV)
+2. Many malware authors use PyInstaller
+3. The .exe is unsigned (no certificate)
+
+YOUR APP IS SAFE - You built it yourself from your own code!
+
+
+========================================
+PERMANENT FIX (For Distribution)
+========================================
+
+If you want to distribute this to others without issues:
+
+OPTION 1: Code Signing Certificate
+-----------------------------------
+Cost: ~$200-300/year
+Providers: DigiCert, Sectigo, GlobalSign
+
+STEPS:
+1. Buy certificate
+2. Sign your .exe with: signtool.exe
+3. Windows trusts signed executables
+
+BENEFIT: No warnings, no blocks
+
+
+OPTION 2: Build Reputation
+---------------------------
+Cost: Free
+Time: Several weeks
+
+STEPS:
+1. Submit false positive report: 
+   https://www.microsoft.com/en-us/wdsi/filesubmission
+2. Wait for Microsoft to review
+3. After enough downloads, Windows learns it's safe
+
+DOWNSIDE: Takes time, may not work
+
+
+OPTION 3: Alternative Packaging
+--------------------------------
+Instead of PyInstaller, use:
+- NSIS installer (wraps the .exe)
+- WiX Toolset (creates .msi)
+- Inno Setup (creates installer)
+
+These are less likely to trigger Defender.
+
+
+========================================
+FOR END USERS - SIMPLE INSTRUCTIONS
+========================================
+
+If sharing this with others, tell them:
+
+"""
+WINDOWS SECURITY WARNING - THIS IS NORMAL
+
+This app is safe but Windows blocks it because it's unsigned.
+
+TO RUN THE APP:
+
+1. Extract InvoiceScanner.exe to a folder
+2. Right-click the folder → Properties
+3. Check "Unblock" if shown → Apply
+4. Add folder to Windows Defender exclusions:
+   - Windows Security → Virus protection → Exclusions
+   - Add the folder where you extracted the .exe
+5. Run InvoiceScanner.exe
+6. If blocked: Click "More info" → "Run anyway"
+
+WHY: The app is not signed with a certificate ($200/year).
+You can verify it's safe - you have the source code!
+"""
+
+
+========================================
+QUICK TEST (5 minutes)
+========================================
+
+Want to test if it works?
+
+1. Extract .exe to Desktop
+2. Windows Security → Add Desktop to exclusions
+3. Run InvoiceScanner.exe
+4. Window should open in 5-10 seconds
+5. Upload an invoice
+6. Get Excel file!
+
+
+========================================
+
